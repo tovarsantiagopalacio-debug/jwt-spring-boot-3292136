@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.thebestadso.innovation.dto.LoginRequestDTO;
 import com.thebestadso.innovation.dto.HttpGlobalResponseDTO;
 import com.thebestadso.innovation.dto.LoginResponseDTO;
 import com.thebestadso.innovation.dto.RegisterRequestDTO;
@@ -58,6 +59,27 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+    @PostMapping("login")
+    public ResponseEntity<HttpGlobalResponseDTO<LoginResponseDTO>> login(@RequestBody LoginRequestDTO request) {
+        HttpGlobalResponseDTO<LoginResponseDTO> response = new HttpGlobalResponseDTO<>();
+
+        try {
+            response = authService.login(request);
+
+            // Si no hay jwt es porque las credenciales no son correctas
+            if (response.getData() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setMessage("Error during login");
+            response.setData(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

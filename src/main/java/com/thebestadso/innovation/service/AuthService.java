@@ -6,6 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.thebestadso.innovation.dto.HttpGlobalResponseDTO;
+import com.thebestadso.innovation.dto.LoginRequestDTO;
 import com.thebestadso.innovation.dto.LoginResponseDTO;
 import com.thebestadso.innovation.dto.RegisterRequestDTO;
 import com.thebestadso.innovation.dto.UserDTO;
@@ -100,6 +101,47 @@ public class AuthService {
 
         response.setMessage("usuario registrado correctamente");
         response.setData(userDTO);
+        return response;
+    }
+
+    /**
+     * Método para iniciar sesión
+     *
+     * @param request username y password
+     * @return jwt firmado si las credenciales son correctas, data null en caso contrario
+     */
+    public HttpGlobalResponseDTO<LoginResponseDTO> login(LoginRequestDTO request) {
+        HttpGlobalResponseDTO<LoginResponseDTO> response = new HttpGlobalResponseDTO<>();
+        LoginResponseDTO login = new LoginResponseDTO();
+
+        // Sin username o password no hay nada que validar
+        if (request.getUsername() == null || request.getPassword() == null) {
+            response.setMessage("Usuario o contraseña incorrectos");
+            return response;
+        }
+
+        Optional<Users> userFound = userRepository.findByUsername(request.getUsername());
+
+        // Mismo mensaje en ambos casos para no revelar si el usuario existe
+        if (userFound.isEmpty()) {
+            response.setMessage("Usuario o contraseña incorrectos");
+            return response;
+        }
+
+        Users user = userFound.get();
+
+        // Compara la clave en texto plano con el hash guardado (BCrypt)
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            response.setMessage("Usuario o contraseña incorrectos");
+            return response;
+        }
+
+        String jwt = jwtService.generateToken(user.getId(), user.getUsername(), user.getRolId());
+
+        login.setJwt(jwt);
+        response.setMessage("Inicio de sesión exitoso");
+        response.setData(login);
+
         return response;
     }
 }
